@@ -56,8 +56,14 @@ Cosmic Diary works on:
 
 ## 👨‍💻 Developer
 
-**Abhi Singh Rajput**
+**Pratik Singh**
 
 ## 📜 License
 
-This project is open for learning and experimentation.
+This project is licensed under the **MIT License**.
+
+Copyright (c) 2026 Abhi Singh Rajput
+
+You are free to use, modify, and distribute this software as long as the original copyright and license notice are included.
+
+For full license details, see the `LICENSE` file in this repository.
