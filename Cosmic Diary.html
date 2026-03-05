@@ -1,0 +1,2371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Diary</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#0a0a1a">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Michroma&family=Quicksand:wght@300;400;600&family=Caveat:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #020205;
+            --accent-glow: rgba(138, 43, 226, 0.5);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --sidebar-width: 340px;
+            --transition-smooth: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            --transition-fast: all 0.3s ease;
+            
+            /* Font Variables */
+            --font-main: 'Quicksand', sans-serif;
+            --font-display: 'Orbitron', sans-serif;
+            
+            /* Theme: Galaxy Purple (Default) */
+            --primary: #8a2be2;
+            --secondary: #4b0082;
+            --nebula-1: rgba(138, 43, 226, 0.15);
+            --nebula-2: rgba(75, 0, 130, 0.15);
+            --star-color: #ffffff;
+            --planet-color: #9370db;
+            --glow-color: #8a2be2;
+            --neon-border: 0 0 10px var(--primary), 0 0 20px var(--primary);
+        }
+
+        /* Cosmic Cursor */
+        .cosmic-cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 15px 2px #fff, 0 0 30px 5px var(--primary);
+            transition: transform 0.15s ease-out, width 0.3s ease, height 0.3s ease;
+            display: none;
+        }
+        .cosmic-cursor.active { display: block; }
+        .cosmic-cursor.hover {
+            transform: scale(4);
+            background: transparent;
+            border: 1px solid #fff;
+        }
+        .cursor-particle {
+            position: fixed;
+            pointer-events: none;
+            background: #fff;
+            border-radius: 50%;
+            z-index: 9998;
+            opacity: 0.6;
+        }
+
+        [data-theme="nebula-dream"] {
+            --primary: #ff00ff; --secondary: #800080;
+            --accent-glow: rgba(255, 0, 255, 0.3);
+            --nebula-1: rgba(255, 0, 255, 0.1); --nebula-2: rgba(128, 0, 128, 0.1);
+            --star-color: #ffccff; --planet-color: #ff00ff; --glow-color: #ff00ff;
+        }
+        [data-theme="deep-space-blue"] {
+            --primary: #00d2ff; --secondary: #004e92;
+            --accent-glow: rgba(0, 210, 255, 0.3);
+            --nebula-1: rgba(0, 210, 255, 0.1); --nebula-2: rgba(0, 78, 146, 0.1);
+            --star-color: #ccf2ff; --planet-color: #00d2ff; --glow-color: #00d2ff;
+        }
+        [data-theme="solar-gold"] {
+            --primary: #fdbb2d; --secondary: #b21f1f;
+            --accent-glow: rgba(253, 187, 45, 0.3);
+            --nebula-1: rgba(253, 187, 45, 0.1); --nebula-2: rgba(178, 31, 31, 0.1);
+            --star-color: #fff4cc; --planet-color: #fdbb2d; --glow-color: #fdbb2d;
+        }
+        [data-theme="aurora-cosmic"] {
+            --primary: #00ff87; --secondary: #60efff;
+            --accent-glow: rgba(0, 255, 135, 0.3);
+            --nebula-1: rgba(0, 255, 135, 0.1); --nebula-2: rgba(96, 239, 255, 0.1);
+            --star-color: #ccffeb; --planet-color: #00ff87; --glow-color: #00ff87;
+        }
+
+        [data-mode="day"] {
+            --bg-color: #eef2f7;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --star-color: #94a3b8;
+            --nebula-1: rgba(138, 43, 226, 0.05);
+            --nebula-2: rgba(0, 210, 255, 0.05);
+            --planet-color: #6366f1;
+        }
+
+        /* Font Classes */
+        .font-orbitron { --font-main: 'Orbitron', sans-serif; --font-display: 'Orbitron', sans-serif; }
+        .font-michroma { --font-main: 'Michroma', sans-serif; --font-display: 'Michroma', sans-serif; }
+        .font-quicksand { --font-main: 'Quicksand', sans-serif; --font-display: 'Orbitron', sans-serif; }
+        .font-caveat { --font-main: 'Caveat', cursive; --font-display: 'Caveat', cursive; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            transition: background 1.5s ease;
+        }
+
+        body.animations-off *,
+        body.animations-off *::before,
+        body.animations-off *::after {
+            animation-play-state: paused !important;
+        }
+
+        /* Canvas Background */
+        #cosmic-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        .nebula-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--nebula-1) 0%, transparent 70%),
+                radial-gradient(circle at 80% 70%, var(--nebula-2) 0%, transparent 70%);
+            filter: blur(120px);
+            transition: var(--transition-smooth);
+            animation: drift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift {
+            from { transform: scale(1) translate(0, 0); }
+            to { transform: scale(1.1) translate(2%, 2%); }
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #010103;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .pulsar-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulsar-core {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 40px 10px #fff,
+                0 0 80px 20px var(--primary),
+                0 0 120px 40px var(--accent-glow);
+            z-index: 10;
+            animation: pulseCore 1.5s ease-in-out infinite;
+        }
+
+        .pulsar-beam {
+            position: absolute;
+            width: 4px;
+            height: 200vh;
+            background: linear-gradient(to bottom, transparent, var(--primary), #fff, var(--primary), transparent);
+            opacity: 0.4;
+            filter: blur(4px);
+            animation: rotateBeam 6s linear infinite;
+        }
+
+        .pulsar-beam:nth-child(2) {
+            animation-delay: -3s;
+        }
+
+        .pulsar-ring {
+            position: absolute;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            opacity: 0;
+            animation: expandRing 4s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+        }
+
+        .pulsar-ring:nth-child(4) { animation-delay: 1.3s; }
+        .pulsar-ring:nth-child(5) { animation-delay: 2.6s; }
+
+        @keyframes pulseCore {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.15); filter: brightness(1.8); }
+        }
+
+        @keyframes rotateBeam {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes expandRing {
+            0% { width: 60px; height: 60px; opacity: 0.8; border-width: 6px; }
+            100% { width: 600px; height: 600px; opacity: 0; border-width: 1px; }
+        }
+
+        /* Cosmic Buttons */
+        .btn-cosmic {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+            outline: 1px solid transparent;
+        }
+
+        .btn-cosmic::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: translateX(-150%);
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        }
+
+        .btn-cosmic:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-cosmic:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 25px var(--accent-glow), inset 0 0 15px var(--accent-glow);
+            transform: translateY(-3px);
+            outline: 1px solid var(--primary);
+        }
+
+        .btn-cosmic:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-cosmic.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4), 0 0 10px var(--accent-glow);
+        }
+
+        .btn-cosmic.primary:hover {
+            background: var(--glow-color);
+            box-shadow: 0 0 35px var(--glow-color), 0 0 15px #fff;
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-effect {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        .particle-burst {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-fly 0.8s ease-out forwards;
+        }
+
+        @keyframes particle-fly {
+            to { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+
+        /* Cosmic Toggle */
+        .cosmic-toggle {
+            position: relative;
+            width: 70px;
+            height: 34px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 34px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .cosmic-toggle .thumb {
+            width: 26px;
+            height: 26px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            font-size: 14px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cosmic-toggle::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, var(--primary) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .cosmic-toggle.active {
+            background: rgba(var(--primary), 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .cosmic-toggle.active::after { opacity: 0.2; }
+
+        .cosmic-toggle.active .thumb {
+            transform: translateX(36px);
+            background: #fff;
+            box-shadow: 0 0 20px #fff, 0 0 40px var(--primary);
+            color: #000;
+        }
+
+        .cosmic-toggle .orbit-trail {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(to right, transparent, var(--primary));
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .cosmic-toggle.active .orbit-trail { opacity: 0.6; }
+
+        .about-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 4rem;
+            border-radius: 40px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            backdrop-filter: blur(20px);
+            animation: authFloat 10s ease-in-out infinite;
+        }
+        .about-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            display: block;
+        }
+
+        /* Auth Screen */
+        #auth-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            background: rgba(1, 1, 3, 0.85);
+            backdrop-filter: blur(25px);
+            transition: opacity 1s ease;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            padding: 4rem;
+            border-radius: 40px;
+            width: 100%;
+            max-width: 460px;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(0,0,0,0.5), inset 0 0 20px var(--glass-border);
+            animation: authFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes authFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(1deg); }
+        }
+
+        /* Dashboard */
+        .view-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: var(--transition-smooth);
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view-content.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .welcome-header h1 {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            letter-spacing: -2px;
+            background: linear-gradient(to bottom, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 24px;
+            text-align: center;
+            transition: var(--transition-smooth);
+            backdrop-filter: blur(15px);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-12px) scale(1.03);
+            border-color: var(--primary);
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 30px var(--accent-glow);
+        }
+
+        .stat-card h2 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Sidebar & Entry Cards */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.2);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            transition: var(--transition-smooth);
+        }
+
+        @keyframes cardEnter {
+            from { opacity: 0; transform: translateX(-20px) scale(0.98); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        .entry-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 20px;
+            margin-bottom: 1.2rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+
+        .entry-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.08) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .entry-card:hover::after {
+            opacity: 1;
+        }
+
+        .entry-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: var(--primary);
+            transform: translateX(10px) translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px var(--accent-glow);
+        }
+
+        .entry-card.active {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 0 25px var(--accent-glow), 0 0 15px var(--accent-glow);
+            transform: translateX(10px);
+        }
+
+        .entry-card.removing {
+            animation: cardExit 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes cardExit {
+            to { opacity: 0; transform: translateX(50px) scale(0.9); height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+        }
+
+        /* Editor */
+        .editor-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .editor-title {
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: var(--font-display);
+            font-size: 3.2rem;
+            font-weight: 700;
+            outline: none;
+            width: 100%;
+            letter-spacing: -1px;
+        }
+
+        .editor-body {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            line-height: 2;
+            outline: none;
+            resize: none;
+            width: 100%;
+            min-height: 500px;
+        }
+
+        /* Navigation */
+        .nav-bar {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.2rem 3rem;
+            background: rgba(0,0,0,0.1);
+            border-bottom: 1px solid var(--glass-border);
+            align-items: center;
+            backdrop-filter: blur(15px);
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 14px;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.05);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(30px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #05050a;
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 3.5rem;
+            width: 95%;
+            max-width: 550px;
+            box-shadow: 0 0 60px var(--accent-glow);
+            transform: scale(0.8) translateY(40px);
+            transition: var(--transition-smooth);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); border: 2px solid transparent; background-clip: content-box; }
+
+        .hidden { display: none !important; }
+        
+        /* Micro-animations */
+        .orbit-hover {
+            transition: var(--transition-smooth);
+        }
+        .orbit-hover:hover {
+            transform: rotate(1deg) scale(1.02);
+        }
+
+        .glow-focus:focus {
+            box-shadow: 0 0 20px var(--accent-glow);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body class="font-quicksand" data-theme="galaxy-purple">
+    <canvas id="cosmic-canvas"></canvas>
+    <div class="nebula-overlay"></div>
+    <div class="cosmic-cursor" id="custom-cursor"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="pulsar-container">
+            <div class="pulsar-beam"></div>
+            <div class="pulsar-beam"></div>
+            <div class="pulsar-core"></div>
+            <div class="pulsar-ring"></div>
+            <div class="pulsar-ring"></div>
+        </div>
+        <h2 style="margin-top: 5rem; font-family: 'Orbitron'; letter-spacing: 12px; font-weight: 300; color: var(--text-secondary); text-shadow: 0 0 20px var(--accent-glow);">CALIBRATING SINGULARITY</h2>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="hidden">
+        <div class="auth-card">
+            <h1 style="font-family: 'Orbitron'; margin-bottom: 1rem; letter-spacing: 4px;">COSMIC DIARY</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 3rem; font-weight: 300;">Decrypt your private sector.</p>
+            <input type="password" id="password-input" placeholder="ACCESS KEY" class="glow-focus" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 16px; border-radius: 16px; color: white; margin-bottom: 2rem; outline: none; text-align: center; font-family: 'Orbitron'; letter-spacing: 4px;">
+            <button class="btn-cosmic primary" id="unlock-btn" style="width: 100%;">AUTHENTICATE</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-screen" style="display: grid; grid-template-columns: var(--sidebar-width) 1fr; height: 100vh; opacity: 0; transition: opacity 1.5s ease;">
+        <aside class="sidebar">
+            <div style="padding: 2rem; border-bottom: 1px solid var(--glass-border);">
+                <button class="btn-cosmic primary" id="new-entry-btn-sidebar" style="width: 100%;">+ NEW MEMORY</button>
+                <div style="position: relative; margin-top: 1.5rem;">
+                    <input type="text" id="search-input" placeholder="Search the galaxy..." class="glow-focus" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px 12px 12px 40px; border-radius: 14px; color: white; outline: none; font-size: 0.9rem;">
+                    <span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.4;">🔍</span>
+                </div>
+            </div>
+            <div id="entry-list" style="flex: 1; overflow-y: auto; padding: 1.5rem;"></div>
+        </aside>
+
+        <main style="display: flex; flex-direction: column; min-height: 0;">
+            <nav class="nav-bar">
+                <div style="font-family: 'Orbitron'; font-weight: 700; font-size: 1.4rem; margin-right: 3rem; color: var(--primary); letter-spacing: 2px;">COSMIC</div>
+                <div class="nav-link active" data-view="home">Home</div>
+                <div class="nav-link" data-view="diary">Diary</div>
+                <div class="nav-link" data-view="favorites">Favorites</div>
+                <div class="nav-link" data-view="settings">Settings</div>
+                <div class="nav-link" data-view="about">About</div>
+                <div style="flex: 1;"></div>
+                <div class="cosmic-toggle active" id="mode-toggle" style="margin-right: 1.5rem;">
+                    <div class="thumb">🌙</div>
+                </div>
+                <div id="autosave-indicator" style="font-size: 0.7rem; color: var(--text-secondary); font-family: 'Orbitron'; letter-spacing: 1px; margin-right: 1.5rem; opacity: 0.6;">SYNCED</div>
+            </nav>
+
+            <!-- Dashboard View -->
+            <div id="home-view" class="view-content active">
+                <div class="welcome-header">
+                    <h1 id="welcome-text">Welcome, Voyager</h1>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem; font-weight: 300;">Your journey through the stars continues.</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h2 id="stat-total">0</h2>
+                        <p style="font-family: 'Orbitron'; font-size: 0.7rem; letter-spacing: 2px; color: var(--text-secondary);">TOTAL MEMORIES</p>
+                    </div>
+                    <div class="stat-card">
+                        <h2 id="stat-favs">0</h2>
+                        <p style="font-family: 'Orbitron'; font-size: 0.7rem; letter-spacing: 2px; color: var(--text-secondary);">FAVORITES</p>
+                    </div>
+                    <div class="stat-card">
+                        <h2 id="stat-streak">0</h2>
+                        <p style="font-family: 'Orbitron'; font-size: 0.7rem; letter-spacing: 2px; color: var(--text-secondary);">DAY STREAK</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+                    <button class="btn-cosmic primary" id="dash-new-btn">NEW ENTRY</button>
+                    <button class="btn-cosmic" id="dash-open-btn">OPEN DIARY</button>
+                </div>
+
+                <div style="margin-top: 4rem;">
+                    <h3 style="font-family: 'Orbitron'; margin-bottom: 2rem; letter-spacing: 3px; font-size: 1rem; color: var(--primary);">RECENT MEMORIES</h3>
+                    <div id="recent-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem;"></div>
+                </div>
+            </div>
+
+            <!-- Editor View -->
+            <div id="diary-view" class="view-content hidden">
+                <div id="editor-view" class="editor-container">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <input type="text" id="entry-title" class="editor-title" placeholder="Untitled Memory">
+                        <div style="display: flex; gap: 15px;">
+                            <button class="btn-cosmic" id="fav-btn" style="padding: 0; width: 50px; height: 50px; border-radius: 50%;">
+                                <span id="fav-icon" style="font-size: 1.4rem;">☆</span>
+                            </button>
+                            <button class="btn-cosmic" id="delete-btn" style="padding: 0; width: 50px; height: 50px; border-radius: 50%; border-color: rgba(255, 75, 43, 0.3);">
+                                <span style="color: #ff4b2b;">🗑</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: -1.5rem; font-family: 'Orbitron'; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="entry-date"></span>
+                        <div id="tags-container" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <input type="text" id="tag-input" placeholder="+ TAG" style="background: transparent; border: 1px dashed var(--glass-border); color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.7rem; outline: none; width: 80px; font-family: 'Orbitron';">
+                        </div>
+                    </div>
+                    <textarea id="entry-body" class="editor-body" placeholder="Begin your cosmic transmission..."></textarea>
+                    
+                    <div id="attachments-section" class="hidden" style="border-top: 1px solid var(--glass-border); padding-top: 2rem; margin-top: 2rem;">
+                        <h3 style="font-family: 'Orbitron'; font-size: 0.8rem; letter-spacing: 2px; color: var(--primary); margin-bottom: 1.5rem;">ATTACHMENTS</h3>
+                        <div id="attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.5rem;"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="btn-cosmic" id="attach-btn" style="font-size: 0.7rem; padding: 8px 16px;">📎 ATTACH FILE</button>
+                    </div>
+                </div>
+                <div id="no-entry-view" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary);">
+                    <div style="font-size: 6rem; opacity: 0.1; margin-bottom: 2rem; animation: authFloat 10s ease-in-out infinite;">🌌</div>
+                    <h2 style="font-family: 'Orbitron'; letter-spacing: 4px; font-weight: 300;">SELECT A MEMORY</h2>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view-content hidden" style="max-width: 900px; margin: 0 auto; width: 100%;">
+                <h1 style="font-family: 'Orbitron'; margin-bottom: 3rem; letter-spacing: 4px;">GALAXY SETTINGS</h1>
+                
+                <div style="display: flex; flex-direction: column; gap: 3rem;">
+                    <section>
+                        <h3 style="margin-bottom: 1.5rem; color: var(--primary); font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 2px;">VISUAL THEME</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.5rem;">
+                            <div class="stat-card theme-opt" data-theme="galaxy-purple" style="cursor: pointer; padding: 1.5rem;">Purple</div>
+                            <div class="stat-card theme-opt" data-theme="nebula-dream" style="cursor: pointer; padding: 1.5rem;">Nebula</div>
+                            <div class="stat-card theme-opt" data-theme="deep-space-blue" style="cursor: pointer; padding: 1.5rem;">Blue</div>
+                            <div class="stat-card theme-opt" data-theme="solar-gold" style="cursor: pointer; padding: 1.5rem;">Gold</div>
+                            <div class="stat-card theme-opt" data-theme="aurora-cosmic" style="cursor: pointer; padding: 1.5rem;">Aurora</div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 style="margin-bottom: 1.5rem; color: var(--primary); font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 2px;">TYPOGRAPHY</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1.5rem;">
+                            <div class="stat-card font-opt" data-font="orbitron" style="cursor: pointer; font-family: 'Orbitron';">Orbitron</div>
+                            <div class="stat-card font-opt" data-font="michroma" style="cursor: pointer; font-family: 'Michroma';">Michroma</div>
+                            <div class="stat-card font-opt" data-font="quicksand" style="cursor: pointer; font-family: 'Quicksand';">Quicksand</div>
+                            <div class="stat-card font-opt" data-font="caveat" style="cursor: pointer; font-family: 'Caveat';">Caveat</div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 style="margin-bottom: 1.5rem; color: var(--primary); font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 2px;">PREFERENCES</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1.2rem 2rem; border-radius: 20px; border: 1px solid var(--glass-border);">
+                                <span style="font-family: 'Orbitron'; font-size: 0.8rem; letter-spacing: 1px;">Dynamic Background</span>
+                                <div class="cosmic-toggle" id="anim-toggle">
+                                    <div class="thumb">🌙</div>
+                                </div>
+                            </div>
+                            <div id="speed-control" style="background: rgba(255,255,255,0.02); padding: 1.2rem 2rem; border-radius: 20px; border: 1px solid var(--glass-border); margin-top: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                                    <span style="font-family: 'Orbitron'; font-size: 0.7rem; letter-spacing: 1px; color: var(--text-secondary);">ORBITAL SPEED</span>
+                                    <span id="speed-val" style="font-family: 'Orbitron'; font-size: 0.7rem; color: var(--primary);">1.0x</span>
+                                </div>
+                                <input type="range" id="speed-slider" min="0.1" max="5" step="0.1" value="1" style="width: 100%; accent-color: var(--primary); cursor: pointer;">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1.2rem 2rem; border-radius: 20px; border: 1px solid var(--glass-border);">
+                                <span style="font-family: 'Orbitron'; font-size: 0.8rem; letter-spacing: 1px;">Cosmic Cursor</span>
+                                <div class="cosmic-toggle" id="cursor-toggle">
+                                    <div class="thumb">✨</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1.2rem 2rem; border-radius: 20px; border: 1px solid var(--glass-border);">
+                                <span style="font-family: 'Orbitron'; font-size: 0.8rem; letter-spacing: 1px;">UI Sound Effects</span>
+                                <div class="cosmic-toggle" id="sound-toggle">
+                                    <div class="thumb">🎵</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 style="margin-bottom: 1.5rem; color: var(--primary); font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 2px;">SECURITY & DATA</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                            <button class="btn-cosmic" id="change-pwd-btn">CHANGE ACCESS KEY</button>
+                            <div style="display: flex; gap: 1.5rem;">
+                                <button class="btn-cosmic" id="export-btn" style="flex: 1;">EXPORT GALAXY (JSON)</button>
+                                <button class="btn-cosmic" id="import-btn" style="flex: 1;">IMPORT GALAXY (JSON)</button>
+                            </div>
+                            <input type="file" id="import-file" style="display: none;" accept=".json">
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Favorites View -->
+            <div id="favorites-view" class="view-content hidden">
+                <h1 style="font-family: 'Orbitron'; margin-bottom: 3rem; letter-spacing: 4px;">STARRED MEMORIES</h1>
+                <div id="favorites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem;"></div>
+            </div>
+
+            <!-- About View -->
+            <div id="about-view" class="view-content hidden">
+                <div class="about-card">
+                    <span class="about-icon">🌌</span>
+                    <h1 style="font-family: 'Orbitron'; letter-spacing: 6px; margin-bottom: 1rem;">COSMIC DIARY</h1>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem; font-weight: 300;">Version 2.1.0 Gold Edition</p>
+                    <p style="line-height: 1.8; color: var(--text-secondary); margin-bottom: 2rem;">
+                        A premium, private space for your thoughts. Built with orbital mechanics and cosmic lighting, designed to feel like a futuristic galaxy interface. Your data stays on your device, protected by the stars.
+                    </p>
+                    <div style="display: flex; justify-content: center; gap: 2rem; border-top: 1px solid var(--glass-border); padding-top: 2rem;">
+                        <div>
+                            <p style="font-family: 'Orbitron'; font-size: 0.6rem; color: var(--primary); letter-spacing: 2px;">DEVELOPER</p>
+                            <p>Pratik Singh (Abhi)</p>
+                        </div>
+                        <div>
+                            <p style="font-family: 'Orbitron'; font-size: 0.6rem; color: var(--primary); letter-spacing: 2px;">ENGINE</p>
+                            <p>Singularity v2</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <input type="file" id="file-input" style="display: none;" multiple>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="pwd-modal">
+        <div class="modal" style="max-width: 450px;">
+            <h2 style="font-family: 'Orbitron'; margin-bottom: 1.5rem; letter-spacing: 2px; color: var(--primary);">CHANGE ACCESS KEY</h2>
+            <div style="display: flex; flex-direction: column; gap: 1.2rem; margin-bottom: 2rem;">
+                <input type="password" id="current-pwd" placeholder="CURRENT ACCESS KEY" class="glow-focus" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 12px; color: white; outline: none;">
+                <input type="password" id="new-pwd" placeholder="NEW ACCESS KEY" class="glow-focus" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 12px; color: white; outline: none;">
+                <input type="password" id="confirm-new-pwd" placeholder="CONFIRM NEW KEY" class="glow-focus" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 12px; color: white; outline: none;">
+            </div>
+            <div style="display: flex; gap: 1.2rem;">
+                <button class="btn-cosmic primary" id="save-pwd-btn" style="flex: 1;">UPDATE</button>
+                <button class="btn-cosmic" id="cancel-pwd-btn" style="flex: 1;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal">
+            <h2 style="font-family: 'Orbitron'; margin-bottom: 1.5rem; letter-spacing: 2px;">DISSOLVE MEMORY?</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 3rem; font-weight: 300; line-height: 1.6;">This memory will be scattered into the cosmic void. This action cannot be undone by conventional means.</p>
+            <div style="display: flex; gap: 1.5rem;">
+                <button class="btn-cosmic" id="confirm-delete-btn" style="flex: 1; border-color: #ff4b2b; color: #ff4b2b;">DISSOLVE</button>
+                <button class="btn-cosmic" id="cancel-delete-btn" style="flex: 1;">ABORT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS & STATE ---
+        const DB_NAME = 'CosmicDiaryDB';
+        const DB_VERSION = 2;
+        const STORE_NAME = 'entries';
+        
+        let db;
+        let currentEntryId = null;
+        let entries = [];
+        let autosaveTimer = null;
+        let currentView = 'home';
+        let isNightMode = true;
+
+        // --- COSMIC ENGINE (Canvas) ---
+        class CosmicEngine {
+            constructor() {
+                this.canvas = document.getElementById('cosmic-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.stars = [];
+                this.planets = [];
+                this.meteors = [];
+                this.nebulae = [];
+                this.asteroids = [];
+                this.comets = [];
+                this.sun = null;
+                this.pulsar = null;
+                this.blackHole = null;
+                this.w = 0;
+                this.h = 0;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.targetMouseX = 0;
+                this.targetMouseY = 0;
+                this.speedMultiplier = parseFloat(localStorage.getItem('cosmic_speed')) || 1.0;
+                this.init();
+            }
+
+            init() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                window.addEventListener('mousemove', (e) => {
+                    this.targetMouseX = (e.clientX - this.w / 2) / (this.w / 2);
+                    this.targetMouseY = (e.clientY - this.h / 2) / (this.h / 2);
+                });
+                this.createElements();
+                this.animate();
+            }
+
+            resize() {
+                this.w = this.canvas.width = window.innerWidth;
+                this.h = this.canvas.height = window.innerHeight;
+                this.createElements();
+            }
+
+            resolveColor(variable) {
+                return getComputedStyle(document.documentElement).getPropertyValue(variable).trim() || '#ffffff';
+            }
+
+            createElements() {
+                this.stars = [];
+                this.planets = [];
+                this.meteors = [];
+                this.nebulae = [];
+                this.asteroids = [];
+                
+                this.colors = {
+                    primary: this.resolveColor('--primary'),
+                    secondary: this.resolveColor('--secondary'),
+                    accent: this.resolveColor('--accent-glow')
+                };
+
+                this.sunRotation = 0;
+
+                // Parallax Stars
+                for (let i = 0; i < 400; i++) {
+                    this.stars.push({
+                        x: Math.random() * this.w,
+                        y: Math.random() * this.h,
+                        size: Math.random() * 1.8,
+                        speed: Math.random() * 0.05 + 0.01,
+                        opacity: Math.random(),
+                        pulse: Math.random() * 0.01 + 0.005,
+                        layer: Math.floor(Math.random() * 3) + 1,
+                        color: Math.random() > 0.8 ? (Math.random() > 0.5 ? '#add8e6' : '#ffb6c1') : '#ffffff'
+                    });
+                }
+
+                // Nebula Clouds
+                for (let i = 0; i < 5; i++) {
+                    this.nebulae.push({
+                        x: Math.random() * this.w,
+                        y: Math.random() * this.h,
+                        radius: Math.random() * 300 + 200,
+                        color: this.resolveColor(i % 2 === 0 ? '--nebula-1' : '--nebula-2'),
+                        vx: (Math.random() - 0.5) * 0.2,
+                        vy: (Math.random() - 0.5) * 0.2
+                    });
+                }
+
+                // Planets with Moons
+                const planetCount = Math.min(5, Math.floor(this.w / 350));
+                for (let i = 0; i < planetCount; i++) {
+                    const color = this.resolveColor('--planet-color');
+                    this.planets.push({
+                        x: Math.random() * this.w,
+                        y: Math.random() * this.h,
+                        radius: Math.random() * 40 + 20,
+                        color: color,
+                        orbitRadius: Math.random() * 200 + 150,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: (Math.random() * 0.0004 + 0.0001) * (Math.random() > 0.5 ? 1 : -1),
+                        hasRings: Math.random() > 0.7,
+                        moons: Array.from({ length: Math.floor(Math.random() * 4) }, () => ({
+                            radius: Math.random() * 5 + 2,
+                            orbitRadius: Math.random() * 50 + 50,
+                            angle: Math.random() * Math.PI * 2,
+                            speed: Math.random() * 0.01 + 0.005,
+                            color: '#ccc'
+                        }))
+                    });
+                }
+
+                // Asteroid Belt
+                for (let i = 0; i < 50; i++) {
+                    this.asteroids.push({
+                        x: Math.random() * this.w,
+                        y: Math.random() * this.h,
+                        size: Math.random() * 3 + 1,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: Math.random() * 0.001 + 0.0005,
+                        orbitX: this.w / 2,
+                        orbitY: this.h / 2,
+                        orbitRadius: Math.random() * 400 + 300
+                    });
+                }
+
+                // Black Hole
+                this.blackHole = {
+                    x: this.w * 0.85,
+                    y: this.h * 0.25,
+                    radius: 50,
+                    swirls: Array.from({ length: 30 }, () => ({
+                        angle: Math.random() * Math.PI * 2,
+                        radius: Math.random() * 150 + 60,
+                        speed: Math.random() * 0.03 + 0.01,
+                        size: Math.random() * 3 + 1,
+                        color: Math.random() > 0.5 ? this.colors.primary : '#fff'
+                    }))
+                };
+
+                // Sun (for Day Mode)
+                this.sun = {
+                    x: this.w * 0.15,
+                    y: this.h * 0.15,
+                    radius: 60,
+                    rays: 12
+                };
+
+                // Distant Pulsar
+                this.pulsar = {
+                    x: this.w * 0.3,
+                    y: this.h * 0.7,
+                    radius: 4,
+                    glow: 0,
+                    pulseSpeed: 0.05
+                };
+            }
+
+            drawNebula(n) {
+                const offsetX = this.mouseX * 30;
+                const offsetY = this.mouseY * 30;
+                
+                n.x += n.vx * this.speedMultiplier;
+                n.y += n.vy * this.speedMultiplier;
+                if (n.x < -n.radius) n.x = this.w + n.radius;
+                if (n.x > this.w + n.radius) n.x = -n.radius;
+                if (n.y < -n.radius) n.y = this.h + n.radius;
+                if (n.y > this.h + n.radius) n.y = -n.radius;
+
+                const grad = this.ctx.createRadialGradient(n.x + offsetX, n.y + offsetY, 0, n.x + offsetX, n.y + offsetY, n.radius);
+                grad.addColorStop(0, n.color);
+                grad.addColorStop(1, 'transparent');
+                this.ctx.fillStyle = grad;
+                this.ctx.globalCompositeOperation = 'screen';
+                this.ctx.beginPath();
+                this.ctx.arc(n.x + offsetX, n.y + offsetY, n.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.globalCompositeOperation = 'source-over';
+            }
+
+            drawStar(s) {
+                const offsetX = this.mouseX * (s.layer * 15);
+                const offsetY = this.mouseY * (s.layer * 15);
+                
+                s.y -= s.speed * s.layer * this.speedMultiplier;
+                if (s.y < 0) s.y = this.h;
+                
+                s.opacity += s.pulse * this.speedMultiplier;
+                if (s.opacity > 1 || s.opacity < 0.2) s.pulse *= -1;
+                
+                this.ctx.globalAlpha = s.opacity;
+                this.ctx.fillStyle = s.color;
+                this.ctx.beginPath();
+                this.ctx.arc(s.x + offsetX, s.y + offsetY, s.size, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.globalAlpha = 1;
+            }
+
+            drawPlanet(p) {
+                p.angle += p.speed * this.speedMultiplier;
+                const offsetX = this.mouseX * 40;
+                const offsetY = this.mouseY * 40;
+                const px = p.x + Math.cos(p.angle) * p.orbitRadius + offsetX;
+                const py = p.y + Math.sin(p.angle) * p.orbitRadius + offsetY;
+
+                // Rings
+                if (p.hasRings) {
+                    this.ctx.strokeStyle = p.color + '44';
+                    this.ctx.lineWidth = 4;
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(px, py, p.radius * 2.2, p.radius * 0.8, p.angle, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                }
+
+                // Atmosphere Glow
+                const grad = this.ctx.createRadialGradient(px, py, 0, px, py, p.radius * 2.5);
+                grad.addColorStop(0, p.color + '33');
+                grad.addColorStop(1, 'transparent');
+                this.ctx.fillStyle = grad;
+                this.ctx.beginPath();
+                this.ctx.arc(px, py, p.radius * 2.5, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Planet Body
+                const bodyGrad = this.ctx.createRadialGradient(px - p.radius/3, py - p.radius/3, 0, px, py, p.radius);
+                bodyGrad.addColorStop(0, '#fff');
+                bodyGrad.addColorStop(0.2, p.color);
+                bodyGrad.addColorStop(1, '#000');
+                this.ctx.fillStyle = bodyGrad;
+                this.ctx.beginPath();
+                this.ctx.arc(px, py, p.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Moons
+                p.moons.forEach(m => {
+                    m.angle += m.speed * this.speedMultiplier;
+                    const mx = px + Math.cos(m.angle) * m.orbitRadius;
+                    const my = py + Math.sin(m.angle) * m.orbitRadius;
+                    this.ctx.fillStyle = m.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(mx, my, m.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+            }
+
+            drawBlackHole() {
+                if (!isNightMode) return;
+                const b = this.blackHole;
+                const offsetX = this.mouseX * 20;
+                const offsetY = this.mouseY * 20;
+                
+                // Event Horizon Glow
+                const grad = this.ctx.createRadialGradient(b.x + offsetX, b.y + offsetY, b.radius, b.x + offsetX, b.y + offsetY, b.radius * 4);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                grad.addColorStop(0.1, this.colors.primary);
+                grad.addColorStop(0.5, 'rgba(138, 43, 226, 0.2)');
+                grad.addColorStop(1, 'transparent');
+                this.ctx.fillStyle = grad;
+                this.ctx.beginPath();
+                this.ctx.arc(b.x + offsetX, b.y + offsetY, b.radius * 4, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Swirls
+                b.swirls.forEach(s => {
+                    s.angle += s.speed * this.speedMultiplier;
+                    const sx = b.x + offsetX + Math.cos(s.angle) * s.radius;
+                    const sy = b.y + offsetY + Math.sin(s.angle) * (s.radius * 0.4);
+                    this.ctx.fillStyle = s.color;
+                    this.ctx.globalAlpha = 0.6;
+                    this.ctx.beginPath();
+                    this.ctx.arc(sx, sy, s.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+
+                // Singularity
+                this.ctx.globalAlpha = 1;
+                this.ctx.fillStyle = '#000';
+                this.ctx.beginPath();
+                this.ctx.arc(b.x + offsetX, b.y + offsetY, b.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+
+            drawSun() {
+                if (isNightMode) return;
+                const s = this.sun;
+                this.sunRotation += 0.005 * this.speedMultiplier;
+                const offsetX = this.mouseX * 20;
+                const offsetY = this.mouseY * 20;
+
+                // Sun Glow
+                const grad = this.ctx.createRadialGradient(s.x + offsetX, s.y + offsetY, s.radius, s.x + offsetX, s.y + offsetY, s.radius * 6);
+                grad.addColorStop(0, 'rgba(253, 187, 45, 0.4)');
+                grad.addColorStop(1, 'transparent');
+                this.ctx.fillStyle = grad;
+                this.ctx.beginPath();
+                this.ctx.arc(s.x + offsetX, s.y + offsetY, s.radius * 6, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Rays
+                this.ctx.save();
+                this.ctx.translate(s.x + offsetX, s.y + offsetY);
+                this.ctx.rotate(this.sunRotation);
+                for (let i = 0; i < s.rays; i++) {
+                    this.ctx.rotate((Math.PI * 2) / s.rays);
+                    this.ctx.fillStyle = 'rgba(253, 187, 45, 0.2)';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, s.radius + 10);
+                    this.ctx.lineTo(-15, s.radius + 60);
+                    this.ctx.lineTo(15, s.radius + 60);
+                    this.ctx.fill();
+                }
+                this.ctx.restore();
+
+                // Sun Body
+                const bodyGrad = this.ctx.createRadialGradient(s.x + offsetX - 10, s.y + offsetY - 10, 0, s.x + offsetX, s.y + offsetY, s.radius);
+                bodyGrad.addColorStop(0, '#fff');
+                bodyGrad.addColorStop(0.5, '#fdbb2d');
+                bodyGrad.addColorStop(1, '#ff8c00');
+                this.ctx.fillStyle = bodyGrad;
+                this.ctx.beginPath();
+                this.ctx.arc(s.x + offsetX, s.y + offsetY, s.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+
+            drawPulsar() {
+                if (!isNightMode) return;
+                const p = this.pulsar;
+                const offsetX = this.mouseX * 15;
+                const offsetY = this.mouseY * 15;
+                p.glow += p.pulseSpeed * this.speedMultiplier;
+                const opacity = (Math.sin(p.glow) + 1) / 2;
+
+                const grad = this.ctx.createRadialGradient(p.x + offsetX, p.y + offsetY, 0, p.x + offsetX, p.y + offsetY, p.radius * 15);
+                grad.addColorStop(0, `rgba(255, 255, 255, ${opacity * 0.8})`);
+                grad.addColorStop(0.2, `rgba(0, 210, 255, ${opacity * 0.4})`);
+                grad.addColorStop(1, 'transparent');
+                
+                this.ctx.fillStyle = grad;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x + offsetX, p.y + offsetY, p.radius * 15, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = '#fff';
+                this.ctx.beginPath();
+                this.ctx.arc(p.x + offsetX, p.y + offsetY, p.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+
+            drawMeteor() {
+                if (Math.random() < 0.02) {
+                    this.meteors.push({
+                        x: Math.random() * this.w,
+                        y: -20,
+                        len: Math.random() * 80 + 40,
+                        speed: (Math.random() * 15 + 10) * this.speedMultiplier,
+                        angle: Math.PI / 4 + (Math.random() - 0.5) * 0.2
+                    });
+                }
+
+                this.meteors.forEach((m, i) => {
+                    m.x += Math.cos(m.angle) * m.speed;
+                    m.y += Math.sin(m.angle) * m.speed;
+                    
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(m.x, m.y);
+                    this.ctx.lineTo(m.x - Math.cos(m.angle) * m.len, m.y - Math.sin(m.angle) * m.len);
+                    this.ctx.stroke();
+
+                    if (m.y > this.h + 100) this.meteors.splice(i, 1);
+                });
+            }
+
+            drawComet() {
+                if (Math.random() < 0.002) {
+                    this.comets.push({
+                        x: -100,
+                        y: Math.random() * this.h * 0.5,
+                        radius: Math.random() * 3 + 2,
+                        speed: (Math.random() * 2 + 1) * this.speedMultiplier,
+                        color: this.colors.primary,
+                        tail: []
+                    });
+                }
+
+                this.comets.forEach((c, i) => {
+                    c.x += c.speed;
+                    c.y += c.speed * 0.2;
+                    c.tail.push({ x: c.x, y: c.y });
+                    if (c.tail.length > 30) c.tail.shift();
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(c.tail[0].x, c.tail[0].y);
+                    c.tail.forEach((t, idx) => {
+                        this.ctx.lineTo(t.x, t.y);
+                        this.ctx.strokeStyle = c.color;
+                        this.ctx.globalAlpha = idx / c.tail.length;
+                        this.ctx.lineWidth = (idx / c.tail.length) * c.radius;
+                    });
+                    this.ctx.stroke();
+                    this.ctx.globalAlpha = 1;
+
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.beginPath();
+                    this.ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    if (c.x > this.w + 100) this.comets.splice(i, 1);
+                });
+            }
+
+            setSpeed(val) {
+                this.speedMultiplier = val;
+                localStorage.setItem('cosmic_speed', val);
+            }
+
+            animate() {
+                if (document.body.classList.contains('animations-off')) return;
+                
+                this.mouseX += (this.targetMouseX - this.mouseX) * 0.05;
+                this.mouseY += (this.targetMouseY - this.mouseY) * 0.05;
+
+                this.ctx.clearRect(0, 0, this.w, this.h);
+                
+                this.nebulae.forEach(n => this.drawNebula(n));
+                this.stars.forEach(s => this.drawStar(s));
+                this.asteroids.forEach(a => {
+                    a.angle += a.speed * this.speedMultiplier;
+                    const offsetX = this.mouseX * 25;
+                    const offsetY = this.mouseY * 25;
+                    const ax = a.orbitX + Math.cos(a.angle) * a.orbitRadius + offsetX;
+                    const ay = a.orbitY + Math.sin(a.angle) * (a.orbitRadius * 0.6) + offsetY;
+                    this.ctx.fillStyle = '#555';
+                    this.ctx.beginPath();
+                    this.ctx.arc(ax, ay, a.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+                this.planets.forEach(p => this.drawPlanet(p));
+                this.drawBlackHole();
+                this.drawSun();
+                this.drawPulsar();
+                this.drawMeteor();
+                this.drawComet();
+
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // --- SOUND MANAGER ---
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.enabled = localStorage.getItem('diary_sound') !== 'false';
+            }
+
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            }
+
+            play(type) {
+                this.init();
+                if (!this.enabled || !this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                const now = this.ctx.currentTime;
+                
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'hover') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.05);
+                    gain.gain.setValueAtTime(0.02, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'toggle') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.2);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                localStorage.setItem('diary_sound', this.enabled);
+                return this.enabled;
+            }
+        }
+
+        // --- CURSOR MANAGER ---
+        class CursorManager {
+            constructor() {
+                this.cursor = document.getElementById('custom-cursor');
+                this.enabled = localStorage.getItem('diary_cursor') !== 'false';
+                this.trail = [];
+                this.init();
+            }
+
+            init() {
+                if (this.enabled) this.cursor.classList.add('active');
+                
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.enabled) return;
+                    this.cursor.style.left = e.clientX + 'px';
+                    this.cursor.style.top = e.clientY + 'px';
+                    
+                    this.trail.push({ x: e.clientX, y: e.clientY });
+                    if (this.trail.length > 10) this.trail.shift();
+                    
+                    if (Math.random() > 0.6) this.createParticle(e.clientX, e.clientY);
+                });
+
+                document.addEventListener('mousedown', (e) => {
+                    if (!this.enabled) return;
+                    this.cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                    for(let i=0; i<12; i++) this.createParticle(e.clientX, e.clientY, true);
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (!this.enabled) return;
+                    this.cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                });
+
+                document.addEventListener('mouseover', (e) => {
+                    if (!this.enabled) return;
+                    if (e.target.closest('button, .nav-link, .entry-card, .cosmic-toggle, .stat-card')) {
+                        this.cursor.classList.add('hover');
+                    }
+                });
+
+                document.addEventListener('mouseout', (e) => {
+                    if (!this.enabled) return;
+                    if (e.target.closest('button, .nav-link, .entry-card, .cosmic-toggle, .stat-card')) {
+                        this.cursor.classList.remove('hover');
+                    }
+                });
+            }
+
+            createParticle(x, y, isBurst = false) {
+                const p = document.createElement('div');
+                p.className = 'cursor-particle';
+                const size = isBurst ? Math.random() * 6 + 2 : Math.random() * 4 + 2;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                
+                const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+                const color = Math.random() > 0.5 ? '#fff' : primary;
+                p.style.background = color;
+                p.style.boxShadow = `0 0 10px ${color}`;
+                
+                document.body.appendChild(p);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const dist = isBurst ? Math.random() * 100 + 20 : Math.random() * 40 + 10;
+                const tx = Math.cos(angle) * dist;
+                const ty = Math.sin(angle) * dist;
+                
+                p.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 0.8 },
+                    { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], { duration: isBurst ? 1200 : 1000, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' }).onfinish = () => p.remove();
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                localStorage.setItem('diary_cursor', this.enabled);
+                this.cursor.classList.toggle('active', this.enabled);
+                return this.enabled;
+            }
+        }
+
+        // --- DATABASE LOGIC ---
+        const initDB = () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        };
+
+        const getAllEntries = () => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    // Normalize entries with default values for new fields
+                    const normalized = request.result.map(e => ({
+                        tags: [],
+                        attachments: [],
+                        isFavorite: false,
+                        ...e
+                    }));
+                    resolve(normalized);
+                };
+            });
+        };
+
+        const saveEntry = (entry) => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(entry);
+                request.onsuccess = () => resolve();
+            });
+        };
+
+        const deleteEntryDB = (id) => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+            });
+        };
+
+        // --- APP LOGIC ---
+        const loadEntries = async () => {
+            entries = await getAllEntries();
+            updateStats();
+            renderEntryList();
+            renderDashboard();
+            renderFavorites();
+        };
+
+        const updateStats = () => {
+            const totalEl = document.getElementById('stat-total');
+            const favsEl = document.getElementById('stat-favs');
+            const streakEl = document.getElementById('stat-streak');
+            
+            if (totalEl) totalEl.textContent = entries.length;
+            if (favsEl) favsEl.textContent = entries.filter(e => e.isFavorite).length;
+            
+            const dates = entries.map(e => new Date(e.createdAt).toDateString());
+            const uniqueDates = [...new Set(dates)];
+            if (streakEl) streakEl.textContent = uniqueDates.length;
+        };
+
+        const renderEntryList = () => {
+            const list = document.getElementById('entry-list');
+            const query = document.getElementById('search-input').value.toLowerCase();
+            
+            let filtered = entries.filter(e => 
+                e.title.toLowerCase().includes(query) || e.content.toLowerCase().includes(query)
+            );
+
+            if (currentView === 'favorites') {
+                filtered = filtered.filter(e => e.isFavorite);
+            }
+
+            filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+
+            list.innerHTML = filtered.map((entry, index) => `
+                <div class="entry-card ${currentEntryId === entry.id ? 'active' : ''}" 
+                     data-id="${entry.id}"
+                     onclick="selectEntry('${entry.id}')"
+                     style="animation-delay: ${index * 0.05}s">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <span style="font-size: 0.7rem; color: var(--text-secondary); font-family: 'Orbitron'; letter-spacing: 1px;">${new Date(entry.createdAt).toLocaleDateString()}</span>
+                        ${entry.isFavorite ? '<span style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">★</span>' : ''}
+                    </div>
+                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-display);">${entry.title || 'Untitled Memory'}</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">${entry.content || 'No transmission data...'}</p>
+                </div>
+            `).join('');
+            
+            // Add mouse tracking for cards
+            document.querySelectorAll('.entry-card').forEach(card => {
+                card.addEventListener('mousemove', e => {
+                    const rect = card.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    card.style.setProperty('--x', `${x}%`);
+                    card.style.setProperty('--y', `${y}%`);
+                });
+            });
+        };
+
+        const renderDashboard = () => {
+            const grid = document.getElementById('recent-grid');
+            if (!grid) return;
+            
+            const recent = [...entries].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
+            
+            grid.innerHTML = recent.map(entry => `
+                <div class="stat-card orbit-hover" onclick="selectEntry('${entry.id}'); switchView('diary');" style="cursor: pointer; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); font-family: 'Orbitron'; letter-spacing: 1px;">${new Date(entry.createdAt).toLocaleDateString()}</span>
+                        ${entry.isFavorite ? '<span style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">★</span>' : ''}
+                    </div>
+                    <h3 style="font-family: 'Orbitron'; font-size: 1.1rem; margin-bottom: 0.8rem; letter-spacing: 1px;">${entry.title || 'Untitled Memory'}</h3>
+                    <p style="font-size: 0.95rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.8;">${entry.content || 'No transmission data...'}</p>
+                </div>
+            `).join('');
+
+            if (recent.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.3; font-family: Orbitron; letter-spacing: 2px;">NO RECENT TRANSMISSIONS</p>';
+            }
+        };
+
+        const renderFavorites = () => {
+            const grid = document.getElementById('favorites-grid');
+            if (!grid) return;
+            
+            const favs = entries.filter(e => e.isFavorite);
+            grid.innerHTML = favs.map(entry => `
+                <div class="stat-card orbit-hover" onclick="selectEntry('${entry.id}'); switchView('diary');" style="cursor: pointer; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); font-family: 'Orbitron'; letter-spacing: 1px;">${new Date(entry.createdAt).toLocaleDateString()}</span>
+                        <span style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">★</span>
+                    </div>
+                    <h3 style="font-family: 'Orbitron'; font-size: 1.1rem; margin-bottom: 0.8rem; letter-spacing: 1px;">${entry.title || 'Untitled Memory'}</h3>
+                    <p style="font-size: 0.95rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.8;">${entry.content || 'No transmission data...'}</p>
+                </div>
+            `).join('');
+            
+            if (favs.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.3; font-family: Orbitron; letter-spacing: 2px;">NO STARRED MEMORIES</p>';
+            }
+        };
+
+        const selectEntry = (id) => {
+            currentEntryId = id;
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+            
+            const noEntryView = document.getElementById('no-entry-view');
+            const editorView = document.getElementById('editor-view');
+            
+            if (noEntryView) noEntryView.classList.add('hidden');
+            if (editorView) editorView.classList.remove('hidden');
+            
+            const titleEl = document.getElementById('entry-title');
+            const bodyEl = document.getElementById('entry-body');
+            const dateEl = document.getElementById('entry-date');
+            const favIconEl = document.getElementById('fav-icon');
+            
+            if (titleEl) titleEl.value = entry.title || '';
+            if (bodyEl) {
+                bodyEl.value = entry.content || '';
+                // Auto-expand on load
+                setTimeout(() => {
+                    bodyEl.style.height = 'auto';
+                    bodyEl.style.height = bodyEl.scrollHeight + 'px';
+                }, 0);
+            }
+            if (dateEl) dateEl.textContent = new Date(entry.createdAt).toLocaleDateString(undefined, { dateStyle: 'full' });
+            if (favIconEl) favIconEl.textContent = entry.isFavorite ? '★' : '☆';
+            
+            renderTags();
+            renderAttachments();
+            renderEntryList();
+        };
+
+        const createNewEntry = async () => {
+            const newEntry = {
+                id: crypto.randomUUID(),
+                title: '',
+                content: '',
+                isFavorite: false,
+                tags: [],
+                attachments: [],
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            await saveEntry(newEntry);
+            entries.push(newEntry);
+            updateStats();
+            selectEntry(newEntry.id);
+            switchView('diary');
+        };
+
+        const handleEditorChange = () => {
+            if (!currentEntryId) return;
+            
+            // Auto-expand textarea
+            const bodyEl = document.getElementById('entry-body');
+            if (bodyEl) {
+                bodyEl.style.height = 'auto';
+                bodyEl.style.height = bodyEl.scrollHeight + 'px';
+            }
+
+            const indicator = document.getElementById('autosave-indicator');
+            if (indicator) {
+                indicator.textContent = 'SYNCING...';
+                indicator.style.opacity = '1';
+            }
+            
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(async () => {
+                const entry = entries.find(e => e.id === currentEntryId);
+                if (!entry) return;
+
+                const titleEl = document.getElementById('entry-title');
+                const bodyEl = document.getElementById('entry-body');
+                if (titleEl) entry.title = titleEl.value;
+                if (bodyEl) entry.content = bodyEl.value;
+                entry.updatedAt = Date.now();
+                
+                await saveEntry(entry);
+                
+                if (indicator) {
+                    indicator.textContent = 'SYNCED';
+                    setTimeout(() => {
+                        indicator.style.opacity = '0.6';
+                    }, 1000);
+                }
+                renderEntryList();
+                renderDashboard();
+                renderFavorites();
+            }, 1000);
+        };
+
+        const switchView = (view) => {
+            const currentEl = document.querySelector('.view-content.active');
+            if (currentEl) currentEl.classList.remove('active');
+            
+            setTimeout(() => {
+                document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden'));
+                const nextEl = document.getElementById(`${view}-view`);
+                if (nextEl) {
+                    nextEl.classList.remove('hidden');
+                    setTimeout(() => nextEl.classList.add('active'), 50);
+                }
+                
+                document.querySelectorAll('.nav-link').forEach(l => {
+                    l.classList.toggle('active', l.dataset.view === view);
+                });
+                
+                currentView = view;
+                if (view === 'favorites') renderFavorites();
+                if (view === 'diary') renderEntryList();
+            }, 300);
+        };
+
+        // --- TAGS ---
+        const renderTags = () => {
+            const entry = entries.find(e => e.id === currentEntryId);
+            const container = document.getElementById('tags-container');
+            const input = document.getElementById('tag-input');
+            
+            // Clear existing tags
+            container.querySelectorAll('.tag-pill').forEach(t => t.remove());
+            
+            entry.tags.forEach(tag => {
+                const pill = document.createElement('div');
+                pill.className = 'tag-pill';
+                pill.style.cssText = "background: var(--primary); color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.7rem; display: flex; align-items: center; gap: 5px; font-family: 'Orbitron';";
+                pill.innerHTML = `${tag} <span style="cursor: pointer; opacity: 0.6;" onclick="removeTag('${tag}')">×</span>`;
+                container.insertBefore(pill, input);
+            });
+        };
+
+        const addTag = async (tag) => {
+            const entry = entries.find(e => e.id === currentEntryId);
+            if (!tag || entry.tags.includes(tag)) return;
+            entry.tags.push(tag);
+            await saveEntry(entry);
+            renderTags();
+            renderEntryList();
+        };
+
+        window.removeTag = async (tag) => {
+            const entry = entries.find(e => e.id === currentEntryId);
+            entry.tags = entry.tags.filter(t => t !== tag);
+            await saveEntry(entry);
+            renderTags();
+            renderEntryList();
+        };
+
+        const toggleMode = () => {
+            isNightMode = !isNightMode;
+            document.body.setAttribute('data-mode', isNightMode ? 'night' : 'day');
+            const toggle = document.getElementById('mode-toggle');
+            if (toggle) {
+                toggle.classList.toggle('active', isNightMode);
+                toggle.querySelector('.thumb').textContent = isNightMode ? '🌙' : '☀️';
+            }
+            localStorage.setItem('cosmic_mode', isNightMode ? 'night' : 'day');
+            if (cosmicEngine) cosmicEngine.createElements();
+            soundManager.play('toggle');
+        };
+
+        const toggleAnimations = () => {
+            const toggle = document.getElementById('anim-toggle');
+            const isActive = toggle.classList.toggle('active');
+            toggle.querySelector('.thumb').textContent = isActive ? '☀️' : '🌙';
+            document.body.classList.toggle('animations-off', !isActive);
+            localStorage.setItem('diary_anims', isActive);
+            if (isActive) cosmicEngine.animate();
+            soundManager.play('toggle');
+        };
+
+        const toggleCursor = () => {
+            const toggle = document.getElementById('cursor-toggle');
+            const isActive = cursorManager.toggle();
+            toggle.classList.toggle('active', isActive);
+            toggle.querySelector('.thumb').textContent = isActive ? '✨' : '🌙';
+            soundManager.play('toggle');
+        };
+
+        const toggleSound = () => {
+            const toggle = document.getElementById('sound-toggle');
+            const isActive = soundManager.toggle();
+            toggle.classList.toggle('active', isActive);
+            toggle.querySelector('.thumb').textContent = isActive ? '🎵' : '🌙';
+            soundManager.play('toggle');
+        };
+
+        // --- BUTTON EFFECTS ---
+        const createRipple = (e) => {
+            const btn = e.currentTarget;
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = btn.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        };
+
+        const createParticles = (e) => {
+            const btn = e.currentTarget;
+            const rect = btn.getBoundingClientRect();
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('span');
+                p.className = 'particle-burst';
+                p.style.left = (e.clientX - rect.left) + 'px';
+                p.style.top = (e.clientY - rect.top) + 'px';
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * 50 + 20;
+                p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                p.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                btn.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+        };
+
+        // --- ATTACHMENTS ---
+        const renderAttachments = () => {
+            const entry = entries.find(e => e.id === currentEntryId);
+            const section = document.getElementById('attachments-section');
+            const grid = document.getElementById('attachments-grid');
+            
+            if (!entry.attachments || entry.attachments.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+            
+            section.classList.remove('hidden');
+            grid.innerHTML = entry.attachments.map((file, index) => {
+                let preview = `<div style="font-size: 2rem; opacity: 0.3;">📄</div>`;
+                if (file.type.startsWith('image/')) {
+                    preview = `<img src="${file.data}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+                }
+                
+                return `
+                    <div class="stat-card" style="padding: 1rem; position: relative; cursor: pointer; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center;" onclick="viewAttachment(${index})">
+                        <button onclick="event.stopPropagation(); removeAttachment(${index})" style="position: absolute; top: -5px; right: -5px; background: #ff4b2b; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; z-index: 10;">×</button>
+                        <div style="width: 100%; height: 100px; margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 12px; background: rgba(0,0,0,0.2);">
+                            ${preview}
+                        </div>
+                        <div style="font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; color: var(--text-secondary); font-family: 'Orbitron';">${file.name}</div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const handleFileUpload = async (e) => {
+            const files = Array.from(e.target.files);
+            const entry = entries.find(e => e.id === currentEntryId);
+            
+            for (const file of files) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    entry.attachments.push({
+                        name: file.name,
+                        type: file.type,
+                        data: event.target.result,
+                        size: file.size
+                    });
+                    await saveEntry(entry);
+                    renderAttachments();
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.removeAttachment = async (index) => {
+            const entry = entries.find(e => e.id === currentEntryId);
+            entry.attachments.splice(index, 1);
+            await saveEntry(entry);
+            renderAttachments();
+        };
+
+        window.viewAttachment = (index) => {
+            const entry = entries.find(e => e.id === currentEntryId);
+            const file = entry.attachments[index];
+            const link = document.createElement('a');
+            link.href = file.data;
+            link.download = file.name;
+            link.click();
+        };
+
+        // --- BACKUP & RESTORE ---
+        const exportData = () => {
+            const data = JSON.stringify(entries, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `cosmic_diary_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        };
+
+        const importData = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (!Array.isArray(imported)) throw new Error('Invalid format');
+                    
+                    if (confirm(`Import ${imported.length} memories? This will merge with existing data.`)) {
+                        for (const entry of imported) {
+                            const normalized = {
+                                tags: [], attachments: [], isFavorite: false,
+                                ...entry,
+                                updatedAt: entry.updatedAt || Date.now()
+                            };
+                            await saveEntry(normalized);
+                        }
+                        alert('Restoration complete.');
+                        loadEntries();
+                    }
+                } catch (err) {
+                    alert('Failed to import: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        // --- SECURITY ---
+        const hashPassword = async (password) => {
+            const msgUint8 = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+
+        const openChangePwdModal = () => {
+            document.getElementById('pwd-modal').classList.add('active');
+            soundManager.play('click');
+        };
+
+        const closeChangePwdModal = () => {
+            document.getElementById('pwd-modal').classList.remove('active');
+            document.getElementById('current-pwd').value = '';
+            document.getElementById('new-pwd').value = '';
+            document.getElementById('confirm-new-pwd').value = '';
+        };
+
+        const updateAccessKey = async () => {
+            const current = document.getElementById('current-pwd').value;
+            const newKey = document.getElementById('new-pwd').value;
+            const confirm = document.getElementById('confirm-new-pwd').value;
+
+            if (!current || !newKey || !confirm) {
+                showToast('All fields are required');
+                return;
+            }
+
+            const currentHash = await hashPassword(current);
+            const storedHash = localStorage.getItem('diary_pwd_hash');
+
+            if (currentHash !== storedHash) {
+                showToast('Current access key is incorrect');
+                return;
+            }
+
+            if (newKey !== confirm) {
+                showToast('New keys do not match');
+                return;
+            }
+
+            const newHash = await hashPassword(newKey);
+            localStorage.setItem('diary_pwd_hash', newHash);
+            showToast('Access key updated successfully');
+            closeChangePwdModal();
+            soundManager.play('toggle');
+        };
+
+        const showToast = (msg) => {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+                background: var(--primary); color: white; padding: 12px 25px;
+                border-radius: 12px; font-family: Orbitron; font-size: 0.8rem;
+                letter-spacing: 1px; box-shadow: 0 0 20px var(--accent-glow);
+                z-index: 10000; animation: cardEnter 0.4s ease;
+            `;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        };
+
+        const handleAuth = async () => {
+            const pwdInput = document.getElementById('password-input');
+            const password = pwdInput.value;
+            if (!password) return;
+
+            const hash = await hashPassword(password);
+            const storedHash = localStorage.getItem('diary_pwd_hash');
+
+            if (!storedHash) {
+                localStorage.setItem('diary_pwd_hash', hash);
+                unlockApp();
+            } else if (hash === storedHash) {
+                unlockApp();
+            } else {
+                pwdInput.style.borderColor = '#ff4b2b';
+                pwdInput.style.boxShadow = '0 0 20px rgba(255, 75, 43, 0.4)';
+                setTimeout(() => {
+                    pwdInput.style.borderColor = '';
+                    pwdInput.style.boxShadow = '';
+                }, 1000);
+                pwdInput.value = '';
+                soundManager.play('click');
+            }
+        };
+
+        const unlockApp = () => {
+            document.getElementById('auth-screen').style.opacity = '0';
+            soundManager.play('toggle');
+            setTimeout(() => {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').style.opacity = '1';
+                loadEntries();
+            }, 1000);
+        };
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('unlock-btn').addEventListener('click', handleAuth);
+        document.getElementById('password-input').addEventListener('keypress', (e) => e.key === 'Enter' && handleAuth());
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => switchView(link.dataset.view));
+        });
+
+        document.getElementById('new-entry-btn-sidebar').addEventListener('click', createNewEntry);
+        document.getElementById('dash-new-btn').addEventListener('click', createNewEntry);
+        document.getElementById('dash-open-btn').addEventListener('click', () => switchView('diary'));
+
+        document.getElementById('entry-title').addEventListener('input', handleEditorChange);
+        document.getElementById('entry-body').addEventListener('input', handleEditorChange);
+        document.getElementById('search-input').addEventListener('input', renderEntryList);
+
+        // Tags & Attachments
+        document.getElementById('tag-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addTag(e.target.value.trim().toUpperCase());
+                e.target.value = '';
+            }
+        });
+        
+        document.getElementById('attach-btn').addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+        
+        document.getElementById('file-input').addEventListener('change', handleFileUpload);
+        document.getElementById('mode-toggle').addEventListener('click', toggleMode);
+        document.getElementById('anim-toggle').addEventListener('click', toggleAnimations);
+        document.getElementById('cursor-toggle').addEventListener('click', toggleCursor);
+        document.getElementById('sound-toggle').addEventListener('click', toggleSound);
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            const val = e.target.value;
+            document.getElementById('speed-val').textContent = val + 'x';
+            cosmicEngine.setSpeed(parseFloat(val));
+        });
+        document.getElementById('change-pwd-btn').addEventListener('click', openChangePwdModal);
+        document.getElementById('save-pwd-btn').addEventListener('click', updateAccessKey);
+        document.getElementById('cancel-pwd-btn').addEventListener('click', closeChangePwdModal);
+
+        // Export / Import
+        document.getElementById('export-btn').addEventListener('click', exportData);
+        document.getElementById('import-btn').addEventListener('click', () => {
+            document.getElementById('import-file').click();
+        });
+        document.getElementById('import-file').addEventListener('change', importData);
+
+        document.getElementById('fav-btn').addEventListener('click', async () => {
+            if (!currentEntryId) return;
+            const entry = entries.find(e => e.id === currentEntryId);
+            entry.isFavorite = !entry.isFavorite;
+            await saveEntry(entry);
+            document.getElementById('fav-icon').textContent = entry.isFavorite ? '★' : '☆';
+            document.getElementById('fav-icon').style.color = entry.isFavorite ? '#ffd700' : '';
+            updateStats();
+            renderEntryList();
+            renderDashboard();
+        });
+
+        document.getElementById('delete-btn').addEventListener('click', () => {
+            if (!currentEntryId) return;
+            document.getElementById('confirm-modal').classList.add('active');
+        });
+
+        document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+            document.getElementById('confirm-modal').classList.remove('active');
+        });
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            if (!currentEntryId) return;
+            
+            const card = document.querySelector(`.entry-card[data-id="${currentEntryId}"]`);
+            if (card) {
+                card.classList.add('removing');
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            await deleteEntryDB(currentEntryId);
+            entries = entries.filter(e => e.id !== currentEntryId);
+            
+            document.getElementById('confirm-modal').classList.remove('active');
+            document.getElementById('editor-view').classList.add('hidden');
+            document.getElementById('no-entry-view').classList.remove('hidden');
+            
+            currentEntryId = null;
+            updateStats();
+            renderEntryList();
+            renderDashboard();
+        });
+
+        // Settings
+        document.querySelectorAll('.theme-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const theme = opt.dataset.theme;
+                document.body.setAttribute('data-theme', theme);
+                localStorage.setItem('diary_theme', theme);
+                if (cosmicEngine) cosmicEngine.createElements();
+            });
+        });
+
+        document.querySelectorAll('.font-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const font = opt.dataset.font;
+                document.body.className = `font-${font}`;
+                localStorage.setItem('diary_font', font);
+            });
+        });
+
+        // Global Button Listeners
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-cosmic')) {
+                createRipple(e);
+                createParticles(e);
+                soundManager.play('click');
+            }
+        });
+
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.btn-cosmic, .nav-link, .entry-card')) {
+                soundManager.play('hover');
+            }
+        });
+
+        // --- INITIALIZATION ---
+        let cosmicEngine, soundManager, cursorManager;
+
+        window.onload = async () => {
+            cosmicEngine = new CosmicEngine();
+            soundManager = new SoundManager();
+            cursorManager = new CursorManager();
+            
+            await initDB();
+            
+            // Load Preferences
+            const theme = localStorage.getItem('diary_theme') || 'galaxy-purple';
+            document.body.setAttribute('data-theme', theme);
+            
+            const font = localStorage.getItem('diary_font') || 'quicksand';
+            document.body.className = `font-${font}`;
+            
+            // Load Mode
+            const savedMode = localStorage.getItem('cosmic_mode') || 'night';
+            isNightMode = savedMode === 'night';
+            document.body.setAttribute('data-mode', savedMode);
+            const modeToggle = document.getElementById('mode-toggle');
+            if (modeToggle) {
+                modeToggle.classList.toggle('active', isNightMode);
+                modeToggle.querySelector('.thumb').textContent = isNightMode ? '🌙' : '☀️';
+            }
+            
+            // Load Toggles
+            const anims = localStorage.getItem('diary_anims') !== 'false';
+            document.getElementById('anim-toggle').classList.toggle('active', anims);
+            document.getElementById('anim-toggle').querySelector('.thumb').textContent = anims ? '☀️' : '🌙';
+            if (!anims) document.body.classList.add('animations-off');
+
+            const cursor = localStorage.getItem('diary_cursor') !== 'false';
+            document.getElementById('cursor-toggle').classList.toggle('active', cursor);
+            document.getElementById('cursor-toggle').querySelector('.thumb').textContent = cursor ? '✨' : '🌙';
+
+            const sound = localStorage.getItem('diary_sound') !== 'false';
+            document.getElementById('sound-toggle').classList.toggle('active', sound);
+            document.getElementById('sound-toggle').querySelector('.thumb').textContent = sound ? '🎵' : '🌙';
+
+            // Load Speed
+            const speed = localStorage.getItem('cosmic_speed') || '1.0';
+            document.getElementById('speed-slider').value = speed;
+            document.getElementById('speed-val').textContent = speed + 'x';
+
+            // Fake Loading
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                const pulsar = loader.querySelector('.pulsar-container');
+                
+                loader.style.opacity = '0';
+                if (pulsar) {
+                    pulsar.style.transition = 'transform 2s cubic-bezier(0.4, 0, 0.2, 1), opacity 1.5s ease';
+                    pulsar.style.transform = 'scale(8)';
+                    pulsar.style.opacity = '0';
+                }
+                
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                    document.getElementById('auth-screen').classList.remove('hidden');
+                }, 1500);
+            }, 3500);
+        };
+    </script>
+    <!-- Cosmic Background Music -->
+<audio id="bgMusic" loop preload="auto">
+<source src="./space.mp3" type="audio/mpeg">
+</audio>
+
+<button id="musicToggle"
+style="
+position:fixed;
+bottom:20px;
+right:20px;
+z-index:9999;
+background:rgba(20,20,40,0.7);
+backdrop-filter:blur(6px);
+border:1px solid #7aa2ff;
+color:#fff;
+padding:10px 14px;
+border-radius:12px;
+cursor:pointer;
+font-size:14px;
+transition:0.3s;
+">
+🎵 Music OFF
+</button>
+
+<script>
+const music = document.getElementById("bgMusic");
+const toggle = document.getElementById("musicToggle");
+
+let musicOn = false;
+
+toggle.addEventListener("click", () => {
+    if (!musicOn) {
+        music.volume = 0.3;
+        music.play();
+        toggle.innerText = "🎵 Music ON";
+        musicOn = true;
+    } else {
+        music.pause();
+        toggle.innerText = "🎵 Music OFF";
+        musicOn = false;
+    }
+});
+</script>
+</body>
+</html>
