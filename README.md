@@ -62,7 +62,7 @@ Cosmic Diary works on:
 
 This project is licensed under the **MIT License**.
 
-Copyright (c) 2026 Abhi Singh Rajput
+Copyright (c) 2026 Pratik Singh
 
 You are free to use, modify, and distribute this software as long as the original copyright and license notice are included.
 
